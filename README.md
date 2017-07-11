@@ -343,3 +343,7 @@ These images show what a recovery looks like:
 
 Since I initially drove the car in both training directions (clockwise and counter clockwise),
 I was memory constrained and did **not** attempt to get more data points by flipping the images.
+
+#### 3. Video of the Final Model Driving Car On Track 1 (click to play)
+
+[![Watch the video](simData/IMG/center_2017_07_10_12_57_46_618.jpg)](http://www.autohandle.com/video/VIDEO.mp4)
