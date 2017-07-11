@@ -201,7 +201,7 @@ for line in lines:
     ...
     steeringMeasurements.append(float(line[STEERINGMEASUEMENT])+STERRINGADJUSTMENT[camera])
     
-```python
+```
 
 XtrainInputShape: (160, 320, 3)
 Train on 26008 samples, validate on 6503 samples
@@ -242,7 +242,7 @@ Epoch 6/6
 saving model as: 2017_07_10_22_20.model
 ```
 
-this made the situation evenn worse, the car didn't even make it to the bridge.
+this made the situation even worse, the car didn't even make it to the bridge.
 I then follow the next class lesson and switched to the nvidia model:
     
 ```python
@@ -342,4 +342,4 @@ These images show what a recovery looks like:
 ![alt text](simData/IMG/right_2017_07_10_12_57_46_618.jpg)
 
 Since I initially drove the car in both training directions (clockwise and counter clockwise),
-I was memory constrained and did **not** attept to get more data points by flipping the images.
+I was memory constrained and did **not** attempt to get more data points by flipping the images.
