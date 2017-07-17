@@ -342,7 +342,9 @@ model.add(Dense(50))
 model.add(Dense(10))
 
 ##
-model.add(Dense(1))```
+model.add(Dense(1))
+```
+
 <!---
 Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
 -->
