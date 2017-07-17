@@ -345,9 +345,19 @@ model.add(Dense(10))
 model.add(Dense(1))
 ```
 
-<!---
-Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
--->
+
+#### Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
+
+![alt text](examples/keras_tensorboard_1.png)
+
+This tensorboard visualization was obtained by adding the tenosrboard callback in keras:
+    
+```python
+tensorboard=keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0,  write_graph=True, write_images=True)
+
+history_object=model.fit_generator(train_generator, samples_per_epoch=len(train_samples), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=5, callbacks=[stopOnValLossOf_020, tensorboard])
+```
+The keras visualization did not seem useful to me.
 
 #### 3. Creation of the Training Set & Training Process
 
