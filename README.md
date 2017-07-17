@@ -35,21 +35,21 @@ The goals / steps of this project are the following:
 #### 1. Submission includes all required files and can be used to run the simulator in autonomous mode
 
 My project includes the following files:
-* [model.py containing the script to create and train the model](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/BehavioralCloning.ipynb)
+* [model.py containing the script to create and train the model](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/GeneratorBehavioralCloning.ipynb)
 * [drive.py for driving the car in autonomous mode](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/drive.py)
-* [model.h5 containing a trained convolution neural network](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/2017_07_10_23_21.model)
-* [writeup_report.md or writeup_report.pdf summarizing the results](http://ec2-54-156-49-232.compute-1.amazonaws.com:8888/notebooks/CarND-Behavioral-Cloning-P3/Writeup.md.ipynb)
-* and [a video](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/VIDEO.mp4)
+* [model.h5 containing a trained convolution neural network](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/2017_07_17_18_43.model)
+* [writeup_report.md or writeup_report.pdf summarizing the results](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/Writeup.md.ipynb)
+* and [a video](https://s3.amazonaws.com/autohandle.com/video/2017_07_17_18_43.mp4)
 
 #### 2. Submission includes functional code
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
 ```sh
-python ./drive.py 2017_07_10_23_21.model
+python ./drive.py 2017_07_17_18_43.model
 ```
 
 #### 3. Submission code is usable and readable
 
-The [BehavioralCloning.ipynb](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/BehavioralCloning.ipynb) file contains the code for training and saving the convolution neural network.
+The [GeneratorBehavioralCloning.ipynb](https://github.com/autohandle/CarNDBehavioralCloningP3/blob/master/GeneratorBehavioralCloning.ipynb) file contains the code for training and saving the convolution neural network.
 The file shows the pipeline I used for training and validating the model, 
 and since the code was covered in detail in the class, it contains only a few comments to explain how the code works.
 
@@ -61,15 +61,29 @@ My model is the nvidia neural network model mentioned in class and consists of 5
 
 ```python
 # nvidia model
-model.add(Convolution2D(24, 5, 5, subsample=(2,2), activation="relu"))
-model.add(Convolution2D(36, 5, 5, subsample=(2,2), activation="relu"))
+#model.add(Convolution2D(24, 5, 5, subsample=(2,2)))
+model.add(Convolution2D(24, 5, 5))
+model.add(MaxPooling2D())
+model.add(Activation('relu'))
+
+#model.add(Convolution2D(36, 5, 5, subsample=(2,2)))
+model.add(Convolution2D(36, 5, 5))
+model.add(MaxPooling2D())
+model.add(Activation('relu'))
+
 model.add(Convolution2D(48, 5, 5, subsample=(2,2), activation="relu"))
 model.add(Convolution2D(64, 3, 3, activation="relu"))
 model.add(Convolution2D(64, 3, 3, activation="relu"))
+
 model.add(Flatten())
+model.add(Dropout(.2))
+
 model.add(Dense(100))
 model.add(Dense(50))
 model.add(Dense(10))
+
+##
+model.add(Dense(1))
 ```
 
 The model includes RELU layers to introduce nonlinearity, and the data is normalized in the model using a Keras lambda layer:
@@ -96,6 +110,7 @@ model.add(Dense(120))
 model.add(Dropout(.25))
 model.add(Dense(84))
 ```
+I was repimanded for not including regularization in the nvidia model, so it now also includes both MaxPooling2D and Dropout.
 
 Using the *validation_split* parameter, the model was trained on 80% of the data and validated on 20% of the data to reduce overfitting:
 
@@ -111,12 +126,18 @@ The model was tested by running it through the simulator and ensuring that the v
 
 #### 3. Model parameter tuning
 
-The model used an adam optimizer. In the final training pass, the learning rate was reduced to 0.0001 using the lr (LR) parameter.
+The model used an adam optimizer and used transfer learning.
+In the several training passes, the learning rate was initially set to 0.001 using the lr (LR) parameter
+and reduced to 0.0001 in later passes.
+The same number of epochs was used in each pass: 5.
 
 #### 4. Appropriate training data
 
-Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road,
-but I did not have enough memory to flip the images.
+Training data was chosen to keep the vehicle driving on the road.
+I used a combination of center lane driving in both directions around the entire track.
+The training images set had a high bias for zero steering angle.
+Rather than remove the bias, I used transfer learning. I trained on the biased data
+and then used a smaller image set of center driving in both directions from just past the bridge.
 
 For details about how I created the training data, see the next section. 
 
@@ -189,19 +210,21 @@ saving model as: 2017_07_10_21_11.model
 ```
 
 This time the car humped the left hand side of the bridge. To increase the number of image samples,
-I followed the class lesson and add the left and right camera and included a steering correction:
+I followed the class lesson and both flipped the images and added the left and right camera with a steering correction:
     
 ```python
 STEERINGMEASUEMENT=3
 CAMERAS=3
-STERRINGADJUSTMENT=[0, .3, -.3]
+STERRINGADJUSTMENT=[0, .25, -.25]
 ...
 for line in lines:
     for camera in range(CAMERAS):
     ...
     steeringMeasurements.append(float(line[STEERINGMEASUEMENT])+STERRINGADJUSTMENT[camera])
     
-```
+    images.append(cv2.flip(image,1))
+    steeringMeasurements.append(steering*-1)
+    
 
 XtrainInputShape: (160, 320, 3)
 Train on 26008 samples, validate on 6503 samples
@@ -221,8 +244,10 @@ saving model as: 2017_07_10_21_32.model
 Continuing to follow the class lesson I cropped the images in the pipeline:
     
 ```python
-model.add(Cropping2D(cropping=((70,25),(0,0))))
+IMAGECROP=((50,20), (0,0))
+model.add(Cropping2D(cropping=IMAGECROP))
 ```
+After inspecting random images, I did not crop the images as much as much as the lessons suggested.
 
 ```python
 XtrainInputShape: (160, 320, 3)
@@ -243,59 +268,49 @@ saving model as: 2017_07_10_22_20.model
 ```
 
 this made the situation even worse, the car didn't even make it to the bridge.
-I then follow the next class lesson and switched to the nvidia model:
+I then followed the next class lesson and switched to the nvidia model:
     
 ```python
 # nvidia model
-model.add(Convolution2D(24, 5, 5, subsample=(2,2), activation="relu"))
-model.add(Convolution2D(36, 5, 5, subsample=(2,2), activation="relu"))
+#model.add(Convolution2D(24, 5, 5, subsample=(2,2)))
+model.add(Convolution2D(24, 5, 5))
+model.add(MaxPooling2D())
+model.add(Activation('relu'))
+
+#model.add(Convolution2D(36, 5, 5, subsample=(2,2)))
+model.add(Convolution2D(36, 5, 5))
+model.add(MaxPooling2D())
+model.add(Activation('relu'))
+
 model.add(Convolution2D(48, 5, 5, subsample=(2,2), activation="relu"))
 model.add(Convolution2D(64, 3, 3, activation="relu"))
 model.add(Convolution2D(64, 3, 3, activation="relu"))
+
 model.add(Flatten())
+model.add(Dropout(.2))
+
 model.add(Dense(100))
 model.add(Dense(50))
 model.add(Dense(10))
+
+##
+model.add(Dense(1))
 ```
 
 ```python
-XtrainInputShape: (160, 320, 3)
-Train on 26008 samples, validate on 6503 samples
-Epoch 1/4
-26008/26008 [==============================] - 58s - loss: 0.0302 - acc: 0.2363 - val_loss: 0.0460 - val_acc: 0.2483
-Epoch 2/4
-26008/26008 [==============================] - 58s - loss: 0.0234 - acc: 0.2365 - val_loss: 0.0492 - val_acc: 0.2483
-Epoch 3/4
-26008/26008 [==============================] - 58s - loss: 0.0197 - acc: 0.2365 - val_loss: 0.0478 - val_acc: 0.2483
-Epoch 4/4
-26008/26008 [==============================] - 58s - loss: 0.0171 - acc: 0.2367 - val_loss: 0.0507 - val_acc: 0.2483
-saving model as: 2017_07_10_22_50.model
+Epoch 1/5
+1728/1700 [==============================] - 9s - loss: 0.0446 - val_loss: 0.0316
+Epoch 2/5
+1728/1700 [==============================] - 9s - loss: 0.0306 - val_loss: 0.0326
+Epoch 3/5
+1728/1700 [==============================] - 9s - loss: 0.0316 - val_loss: 0.0358
+Epoch 4/5
+1728/1700 [==============================] - 9s - loss: 0.0263 - val_loss: 0.0264
+Epoch 5/5
+1728/1700 [==============================] - 9s - loss: 0.0359 - val_loss: 0.0340
+        
+saving model as: 2017_07_17_18_43.model
 ```
-
-With the nvidia model, the car went completely around the track, only just touching the yellow lane marker late in the circuit.
-Hoping that I was close to a good model, I modified the learning rate:
-    
-```python
-adamOptimizer=keras.optimizers.Adam(lr=0.0001)
-model.compile(optimizer=adamOptimizer, loss='mse', metrics=['accuracy'])
-model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=4)
-```
-
-```python
-XtrainInputShape: (160, 320, 3)
-Train on 26008 samples, validate on 6503 samples
-Epoch 1/4
-26008/26008 [==============================] - 58s - loss: 0.0300 - acc: 0.2364 - val_loss: 0.0517 - val_acc: 0.2483
-Epoch 2/4
-26008/26008 [==============================] - 58s - loss: 0.0234 - acc: 0.2365 - val_loss: 0.0544 - val_acc: 0.2482
-Epoch 3/4
-26008/26008 [==============================] - 58s - loss: 0.0206 - acc: 0.2365 - val_loss: 0.0581 - val_acc: 0.2482
-Epoch 4/4
-26008/26008 [==============================] - 58s - loss: 0.0186 - acc: 0.2366 - val_loss: 0.0464 - val_acc: 0.2482
-saving model as: 2017_07_10_23_21.model
-```
-
-This was the final step, the vehicle is able to drive autonomously around the track without leaving the road. Woo Hoo!!
 
 #### 2. Final Model Architecture
 
@@ -304,25 +319,30 @@ preprocessing the images with normalization and cropping, and a pipeline that co
 5 convolution neural networks followed by 3 dense layers feeding a final dense regression layer.
 
 ```python
-model = Sequential()
-
-model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=XtrainInputShape))
-model.add(Cropping2D(cropping=((70,25),(0,0))))
-
 # nvidia model
-model.add(Convolution2D(24, 5, 5, subsample=(2,2), activation="relu"))
-model.add(Convolution2D(36, 5, 5, subsample=(2,2), activation="relu"))
+#model.add(Convolution2D(24, 5, 5, subsample=(2,2)))
+model.add(Convolution2D(24, 5, 5))
+model.add(MaxPooling2D())
+model.add(Activation('relu'))
+
+#model.add(Convolution2D(36, 5, 5, subsample=(2,2)))
+model.add(Convolution2D(36, 5, 5))
+model.add(MaxPooling2D())
+model.add(Activation('relu'))
+
 model.add(Convolution2D(48, 5, 5, subsample=(2,2), activation="relu"))
 model.add(Convolution2D(64, 3, 3, activation="relu"))
 model.add(Convolution2D(64, 3, 3, activation="relu"))
+
 model.add(Flatten())
+model.add(Dropout(.2))
+
 model.add(Dense(100))
 model.add(Dense(50))
 model.add(Dense(10))
 
 ##
-model.add(Dense(1))
-```
+model.add(Dense(1))```
 <!---
 Here is a visualization of the architecture (note: visualizing the architecture is optional according to the project rubric)
 -->
@@ -342,8 +362,20 @@ These images show what a recovery looks like:
 ![alt text](simData/IMG/right_2017_07_10_12_57_46_618.jpg)
 
 Since I initially drove the car in both training directions (clockwise and counter clockwise),
-I was memory constrained and did **not** attempt to get more data points by flipping the images.
+I was memory constrained and could not flip the images. The grader strongly suggested that I
+add a generator for the image. I did and then was able to flip the images, as well.
+
+The full track image set had a high bias for a zero steering angle.
+Generally, the zero bias caused the car to drive off the bridge and straight onto the dirt path just past the bridge.
+When 2 learning rates were used (0.001 followed by 0.0001), the car stayed on the track,
+but tended to veer, especially close to the lane markers.
+
+I collected additional training data from the middle of the bridge to just past the dirt path (in both directions).
+Then I used transfer learning to tune the model to the additional images. The car was better behaved.
 
 #### 3. Video of the Final Model Driving Car On Track 1 (click to play)
 
-[![Watch the video](simData/IMG/center_2017_07_10_12_57_46_618.jpg)](http://www.autohandle.com/video/VIDEO.mp4)
+##### using the highly bias zero steering data
+[![Watch the video](simData/IMG/center_2017_07_10_12_57_46_618.jpg)](http://www.autohandle.com/video/2017_07_17_18_42.mp4)
+##### using transfer learning
+[![Watch the video](simData/IMG/center_2017_07_10_12_57_46_618.jpg)](http://www.autohandle.com/video/2017_07_17_18_43.mp4)
